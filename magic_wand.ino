@@ -54,7 +54,9 @@ namespace {
   tflite::ErrorReporter* error_reporter = nullptr;
   const tflite::Model* model = nullptr;
   tflite::MicroInterpreter* interpreter = nullptr;
-  
+
+  ImuProvider imu_provider;
+
   // -------------------------------------------------------------------------------- //
   // UPDATE THESE VARIABLES TO MATCH THE NUMBER AND LIST OF GESTURES IN YOUR DATASET  //
   // -------------------------------------------------------------------------------- //
@@ -75,7 +77,7 @@ void setup() {
     Serial.println("Failed to initialize IMU!");
     while (1);
   }
-  SetupIMU();
+  imu_provider.SetupIMU();
 
   // Start BLE
   if (!BLE.begin()) {
@@ -163,14 +165,13 @@ void setup() {
       (model_output->type != kTfLiteInt8)) {
     TF_LITE_REPORT_ERROR(error_reporter,
                          "Bad output tensor parameters in model");
-    return;
   }
 
 }
 
 void loop() {
   BLEDevice central = BLE.central();
-  
+
   // if a central is connected to the peripheral:
   static bool was_connected_last = false;  
   if (central && !was_connected_last) {
@@ -187,27 +188,27 @@ void loop() {
   }
   int accelerometer_samples_read;
   int gyroscope_samples_read;
-  ReadAccelerometerAndGyroscope(&accelerometer_samples_read, &gyroscope_samples_read);
+
+  imu_provider.ReadAccelerometerAndGyroscope(&accelerometer_samples_read, &gyroscope_samples_read);
 
   // Parse and process IMU data
-  bool done_just_triggered = false;
   if (gyroscope_samples_read > 0) {
-    EstimateGyroscopeDrift(current_gyroscope_drift);
-    UpdateOrientation(gyroscope_samples_read, current_gravity, current_gyroscope_drift);
-    UpdateStroke(gyroscope_samples_read, &done_just_triggered);
+    imu_provider.EstimateGyroscopeDrift();
+    imu_provider.UpdateOrientation(gyroscope_samples_read);
+    imu_provider.UpdateStroke(gyroscope_samples_read);
     if (central && central.connected()) {
-      strokeCharacteristic.writeValue(stroke_struct_buffer, stroke_struct_byte_count);
+      imu_provider.writeStroke(strokeCharacteristic);
     }
   }
   if (accelerometer_samples_read > 0) {
-    EstimateGravityDirection(current_gravity);
-    UpdateVelocity(accelerometer_samples_read, current_gravity);
+    imu_provider.EstimateGravityDirection();
+    imu_provider.UpdateVelocity(accelerometer_samples_read);
   }
 
   // Wait for a gesture to be done
-  if (done_just_triggered) {
+  if (imu_provider.doneJustTriggered()) {
     // Rasterize the gesture
-    RasterizeStroke(stroke_points, *stroke_transmit_length, 0.6f, 0.6f, raster_width, raster_height, raster_buffer);
+    imu_provider.RasterizeStroke(0.6f, 0.6f, raster_width, raster_height, raster_buffer);
     for (int y = 0; y < raster_height; ++y) {
       char line[raster_width + 1];
       for (int x = 0; x < raster_width; ++x) {
@@ -241,10 +242,10 @@ void loop() {
 
     // Parse the model output
     int8_t max_score;
-    int max_index;
+    int max_index = 0;
     for (int i = 0; i < label_count; ++i) {
       const int8_t score = output->data.int8[i];
-      if ((i == 0) || (score > max_score)) {
+      if (i == 0 || score > max_score) {
         max_score = score;
         max_index = i;
       }

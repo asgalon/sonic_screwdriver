@@ -12,62 +12,15 @@ limitations under the License.
 
 #include "rasterize_stroke.h"
 
-namespace {
-constexpr int kFixedPoint = 256;
-
-int32_t MulFP(int32_t a, int32_t b) {
-  return (a * b) / kFixedPoint;
-}
-
-int32_t DivFP(int32_t a, int32_t b) {
-  if (b == 0) {
-    b = 1;
-  }
-  return (a * kFixedPoint) / b;
-}
-
-int32_t FloatToFP(float a) {
-  return static_cast<int32_t>(a * kFixedPoint);
-}
-
-int32_t NormToCoordFP(int32_t a_fp, int32_t range_fp, int32_t half_size_fp) {
-  const int32_t norm_fp = DivFP(a_fp, range_fp);
-  return MulFP(norm_fp, half_size_fp) + half_size_fp;
-}
-
-int32_t RoundFPToInt(int32_t a) {
-  return static_cast<int32_t>((a + (kFixedPoint / 2)) / kFixedPoint);
-}
-
-int32_t Gate(int32_t a, int32_t min, int32_t max) {
-  if (a < min) {
-    return min;
-  } else if (a > max) {
-    return max;
-  } else {
-    return a;
-  }
-}
-
-int32_t Abs(int32_t a) {
-  if (a > 0) {
-    return a;
-  } else {
-    return -a;
-  }
-}
-
-}  // namespace
-
-void RasterizeStroke(
-    int8_t* stroke_points,
-    int stroke_points_count,
-    float x_range, 
-    float y_range, 
-    int width, 
-    int height,
-    int8_t* out_buffer) {
-  //Convert stroke (2d coordinates of the gesture) into a 2d color image 
+void Rasterizer::RasterizeStroke(
+  const int8_t *stroke_points,
+  const int stroke_points_count,
+  const float x_range,
+  const float y_range,
+  const int width,
+  const int height,
+    int8_t *out_buffer) {
+  //Convert stroke (2d coordinates of the gesture) into a 2d color image
   constexpr int num_channels = 3;
   const int buffer_byte_count = height * width * num_channels;
 
@@ -167,3 +120,4 @@ void RasterizeStroke(
     }
   }
 }
+
