@@ -3,6 +3,7 @@
 //
 
 #include "imu_provider.h"
+#include "util.h"
 
 #include <cmath>
 

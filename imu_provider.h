@@ -21,12 +21,6 @@ constexpr int acceleration_data_length = 600 * 3;
 constexpr int gyroscope_data_length = 600 * 3;
 constexpr long max_movement_wait = 500L;
 
-enum COORDINATES {
-  C_X = 0,
-  C_Y = 1,
-  C_Z = 2
-};
-
 class ImuProvider {
   long movement_stopped = 0L;
   bool done_just_triggered = false;
@@ -79,6 +73,14 @@ public:
   void writeStroke(BLECharacteristic& strokeCharacteristic) {
     strokeCharacteristic.writeValue(stroke_struct_buffer, stroke_struct_byte_count);
   }
+  /**
+   * Rasterize stroke
+   * @param x_range fill factor for x range
+   * @param y_range fill factor for y range
+   * @param width width of the raster image
+   * @param height height of the raster image
+   * @param out_buffer raster image output buffer
+   */
   void RasterizeStroke(
     float x_range,
     float y_range,

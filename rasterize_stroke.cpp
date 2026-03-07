@@ -11,6 +11,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "rasterize_stroke.h"
+#include "util.h"
 
 void Rasterizer::RasterizeStroke(
   const int8_t *stroke_points,
@@ -29,28 +30,33 @@ void Rasterizer::RasterizeStroke(
     out_buffer[i] = -128;
   }
 
-  const int32_t width_fp = width * kFixedPoint;
+  // width and height in fixed point
+  const int32_t width_fp = width * kFixedPoint;  // fixed point 8bit.8bit?
   const int32_t height_fp = height * kFixedPoint;
+  // mid point in fixed point
   const int32_t half_width_fp = width_fp / 2;
   const int32_t half_height_fp = height_fp / 2;
+  // scale factor in fixed point
   const int32_t x_range_fp = FloatToFP(x_range);
   const int32_t y_range_fp = FloatToFP(y_range);
 
+  // stroke increment?
   const int t_inc_fp = kFixedPoint / stroke_points_count;
 
-  const int one_half_fp = (kFixedPoint / 2);
+  // 0.5 in fixed point
+  constexpr int one_half_fp = kFixedPoint / 2;
 
-  for (int point_index = 0; point_index < (stroke_points_count - 1); ++point_index) {
-    //Iterate through the stroke and select two sequential start and end coordinate pairs
-    // to form the a line segment
-    //example: Stroke points = [a,b,c...] then we would iterate start=a end=b, start=b end=c...
+  for (int point_index = 0; point_index < stroke_points_count - 1; ++point_index) {
+    // Iterate through the stroke and select two sequential start and end coordinate pairs
+    //  to form the a line segment
+    // example: Stroke points = [a,b,c...] then we would iterate start=a end=b, start=b end=c...
     const int8_t* start_point = &stroke_points[point_index * 2];
-    const int32_t start_point_x_fp = (start_point[0] * kFixedPoint) / 128;
-    const int32_t start_point_y_fp = (start_point[1] * kFixedPoint) / 128;
+    const int32_t start_point_x_fp = start_point[C_X] * 2; // * kFixPoint / 128 = * 256 / 128 = * 2
+    const int32_t start_point_y_fp = start_point[C_Y] * 2;
 
     const int8_t* end_point = &stroke_points[(point_index + 1) * 2];
-    const int32_t end_point_x_fp = (end_point[0] * kFixedPoint) / 128;
-    const int32_t end_point_y_fp = (end_point[1] * kFixedPoint) / 128;
+    const int32_t end_point_x_fp = end_point[C_X] * 2;
+    const int32_t end_point_y_fp = end_point[C_Y] * 2;
 
     const int32_t start_x_fp = NormToCoordFP(start_point_x_fp, x_range_fp, half_width_fp);
     const int32_t start_y_fp = NormToCoordFP(-start_point_y_fp, y_range_fp, half_height_fp);
@@ -62,6 +68,8 @@ void Rasterizer::RasterizeStroke(
     //assign the color of the pixels of this line segment
     // the color shifts from red->green->blue as we get later in the gesture
     const int32_t t_fp = point_index * t_inc_fp;
+
+    // Why put them into 32 bit integers first, only to be reduced to 8bit before storage?
     int32_t red_i32;
     int32_t green_i32;
     int32_t blue_i32;
@@ -104,16 +112,16 @@ void Rasterizer::RasterizeStroke(
         x_inc_fp = -DivFP(delta_x_fp, delta_y_fp);
       }
     }
-    for (int i = 0; i < (line_length + 1); ++i) {
+    for (int i = 0; i <= line_length; ++i) {
       //iterate through the line segment and assign the pixel values
       const int32_t x_fp = start_x_fp + (i * x_inc_fp);
       const int32_t y_fp = start_y_fp + (i * y_inc_fp);
       const int x = RoundFPToInt(x_fp);
       const int y = RoundFPToInt(y_fp);
-      if ((x < 0) or (x >= width) or (y < 0) or (y >= height)) {
+      if (x < 0 or x >= width or y < 0 or y >= height) {
         continue;
       }
-      const int buffer_index = (y * width * num_channels) + (x * num_channels);
+      const int buffer_index = (y * width + x) * num_channels;
       out_buffer[buffer_index + 0] = red_i8;
       out_buffer[buffer_index + 1] = green_i8;
       out_buffer[buffer_index + 2] = blue_i8;
