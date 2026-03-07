@@ -39,7 +39,7 @@ MU_LIB_ROOT := ~/Documents/Arduino/libraries
 TOOLCHAIN_ROOT := /Users/peter/Library/Arduino15/packages/arduino/tools/arm-none-eabi-gcc/7-2017q4
 TOOLCHAIN_BIN := $(TOOLCHAIN_ROOT)/bin
 
-SRCS = magic_wand.cpp magic_wand_model_data.cpp
+SRCS = sonic_screwdriver.cpp sonic_screwdriver_model_data.cpp
 OBJS = $(addsuffix .o,$(basename $(SRCS)))
 CC := $(TOOLCHAIN_BIN)/arm-none-eabi-gcc
 CXX := $(TOOLCHAIN_BIN)/arm-none-eabi-g++
@@ -60,9 +60,9 @@ CXXFLAGS =  -c -w -g3 -nostdlib @/Users/peter/Library/Arduino15/packages/arduino
 
 .PHONY: clean all
 
-all:	magic_wand.elf
+all:	sonic_screwdriver.elf
 
-magic_wand.elf: $(OBJS) magic_wand.ino
+sonic_screwdriver.elf: $(OBJS) sonic_screwdriver.ino
 
 # Detectando las librerías usadas...
 detect_lib:
@@ -78,5 +78,3 @@ depend:
 	cp $< $@
 
 # DO NOT DELETE
-
-magic_wand.o: magic_wand_model_data.h rasterize_stroke.h imu_provider.h

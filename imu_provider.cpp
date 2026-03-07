@@ -4,6 +4,8 @@
 
 #include "imu_provider.h"
 
+#include <cmath>
+
 void ImuProvider::SetupIMU() {
 
   // Make sure we are pulling measurements into a FIFO.
@@ -41,7 +43,7 @@ void ImuProvider::ReadAccelerometerAndGyroscope(int *new_accelerometer_samples, 
 
 void ImuProvider::ReadGyroscope(int *new_gyroscope_samples) {
   // Loop through new samples and add to buffer
-  const int gyroscope_index = (gyroscope_data_index % gyroscope_data_length);
+  const int gyroscope_index = gyroscope_data_index % gyroscope_data_length;
   gyroscope_data_index += 3;
 
   float* current_gyroscope_data = &gyroscope_data[gyroscope_index];
@@ -58,7 +60,7 @@ void ImuProvider::EstimateGravityDirection() {
     samples_to_average = acceleration_data_index;
   }
 
-  const int start_index = (acceleration_data_index + (acceleration_data_length - 3 * (samples_to_average + 1))) % acceleration_data_length;
+  const int start_index = getStartIndex(samples_to_average + 1);
 
   float total[3] = { 0.0f, 0.0f, 0.0f };
 
@@ -77,7 +79,7 @@ void ImuProvider::EstimateGravityDirection() {
 }
 
 void ImuProvider::UpdateVelocity(int new_samples) {
-  const int start_index = (acceleration_data_index + (acceleration_data_length - 3 * (new_samples + 1))) % acceleration_data_length;
+  const int start_index = getStartIndex(new_samples + 1);
 
   for (int i = 0; i < new_samples; ++i) {
     const int index = ((start_index + (i * 3)) % acceleration_data_length);
@@ -108,9 +110,7 @@ void ImuProvider::EstimateGyroscopeDrift() {
     samples_to_average = gyroscope_data_index;
   }
 
-  const int start_index = (gyroscope_data_index +
-    (gyroscope_data_length - 3 * (samples_to_average + 1))) %
-    gyroscope_data_length;
+  const int start_index = getStartIndex(samples_to_average + 1);
 
   float total[3] =  { 0.0f, 0.0f, 0.0f };
 
@@ -131,9 +131,7 @@ void ImuProvider::EstimateGyroscopeDrift() {
 void ImuProvider::UpdateOrientation(int new_samples) {
   //update the current orientation by integrating the angular velocity over time
 
-  const int start_index = ((gyroscope_data_index +
-    (gyroscope_data_length - (3 * new_samples))) %
-    gyroscope_data_length);
+  const int start_index = getStartIndex(new_samples);
 
   // The gyroscope values are in degrees-per-second, so to approximate
   // degrees in the integrated orientation, we need to divide each value
@@ -193,7 +191,7 @@ void ImuProvider::UpdateStroke(int new_samples) {
     }
 
     //if the stroke is too small we skip to the next iteration
-    const bool is_waiting = (*stroke_state == eWaiting);
+    const bool is_waiting = *stroke_state == eWaiting;
     if (is_waiting) {
       continue;
     }
@@ -210,7 +208,7 @@ void ImuProvider::UpdateStroke(int new_samples) {
       continue;
     }
 
-    const int start_index = (gyroscope_data_index + (gyroscope_data_length - 3 * (stroke_length + current_head))) % gyroscope_data_length;
+    const int start_index = getStartIndex(stroke_length + current_head);
 
     //accumulate the x, y, and z orintation data
     float total[3] = { 0.0f, 0.0f, 0.0f };
@@ -339,9 +337,7 @@ bool ImuProvider::IsMoving(int samples_before) {
     return false;
   }
 
-  const int start_index = ((gyroscope_data_index +
-    (gyroscope_data_length - (3 * (moving_sample_count + samples_before)))) %
-    gyroscope_data_length);
+  const int start_index = getStartIndex(moving_sample_count + samples_before);
 
   float total = 0.0f;
 
@@ -361,7 +357,7 @@ bool ImuProvider::IsMoving(int samples_before) {
 }
 
 void ImuProvider::storeCappedValue(const float axis, int8_t *stroke_entry) {
-  int32_t unchecked = static_cast<int32_t>(roundf(axis * 128.0f));
+  const int32_t unchecked = static_cast<int32_t>(roundf(axis * 128.0f));
 
   if (unchecked > 127) {
     *stroke_entry = 127;

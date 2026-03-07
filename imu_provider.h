@@ -1,5 +1,5 @@
-#ifndef MAGIC_WAND_IMU_PROVIDER_H
-#define MAGIC_WAND_IMU_PROVIDER_H
+#ifndef SONIC_SCREWDRIVER_IMU_PROVIDER_H
+#define SONIC_SCREWDRIVER_IMU_PROVIDER_H
 
 #ifdef NANO33_BLE_REV2
 #include <Arduino_BMI270_BMM150.h>
@@ -92,7 +92,13 @@ protected:
   // }
 
   bool IsMoving(int samples_before);
-  void storeCappedValue(const float axis, int8_t *stroke_entry);
+
+  // Store a single capped scaled value as signed byte to target buffer position
+  static void storeCappedValue(float axis, int8_t *stroke_entry);
+
+  int getStartIndex(int pos) const {
+    return (gyroscope_data_index + (gyroscope_data_length - 3 * pos)) % gyroscope_data_length;
+  }
 };
 
-#endif   // MAGIC_WAND_IMU_PROVIDER_H
+#endif   // SONIC_SCREWDRIVER_IMU_PROVIDER_H
