@@ -45,6 +45,7 @@ void Rasterizer::RasterizeStroke(
 
   // 0.5 in fixed point
   constexpr int one_half_fp = kFixedPoint / 2;
+  const int half_count = stroke_points_count >> 1;
 
   for (int point_index = 0; point_index < stroke_points_count - 1; ++point_index) {
     // Iterate through the stroke and select two sequential start and end coordinate pairs
@@ -70,30 +71,22 @@ void Rasterizer::RasterizeStroke(
     const int32_t t_fp = point_index * t_inc_fp;
 
     // Why put them into 32 bit integers first, only to be reduced to 8bit before storage?
-    int32_t red_i32;
-    int32_t green_i32;
-    int32_t blue_i32;
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
 
-    // what is happening here is red is fading out between 0 and halfway in,
-    // green is rising to half point and then falling again,
-    // and blue is rising from half point to end.
-    // This can be done far easier.
-    if (t_fp < one_half_fp) {
-      const int32_t local_t_fp = DivFP(t_fp, one_half_fp);
-      const int32_t one_minus_t_fp = kFixedPoint - local_t_fp;
-      red_i32 = RoundFPToInt(one_minus_t_fp * 255) - 128;
-      green_i32 = RoundFPToInt(local_t_fp * 255) - 128;
-      blue_i32 = -128;
+    // what is happening here is red is fading out from     0xFF - 0x00 - 0x00,
+    // green is rising to half point and then falling again 0x00 - 0xFF - 0x00,
+    // and blue is rising from half point to end            0x00 - 0x00 - 0xFF.
+    if (point_index < half_count) {
+      red = 0xFF * (1 - point_index / half_count);
+      green = 0xFF * point_index / half_count;
+      blue = 0x00;
     } else {
-      const int32_t local_t_fp = DivFP(t_fp - one_half_fp, one_half_fp);
-      const int32_t one_minus_t_fp = kFixedPoint - local_t_fp;
-      red_i32 = -128;
-      green_i32 = RoundFPToInt(one_minus_t_fp * 255) - 128;
-      blue_i32 = RoundFPToInt(local_t_fp * 255) - 128;
+      red = 0x00;
+      green = 0xFF * (1 - (point_index - half_count) / half_count);
+      blue = 0xFF * (point_index - half_count) / half_count;
     }
-    const int8_t red_i8 = Gate(red_i32, -128, 127);
-    const int8_t green_i8 = Gate(green_i32, -128, 127);
-    const int8_t blue_i8 = Gate(blue_i32, -128, 127);
 
     int line_length;
     int32_t x_inc_fp;
@@ -127,9 +120,9 @@ void Rasterizer::RasterizeStroke(
         continue;
       }
       const int buffer_index = (y * width + x) * num_channels;
-      out_buffer[buffer_index + 0] = red_i8;
-      out_buffer[buffer_index + 1] = green_i8;
-      out_buffer[buffer_index + 2] = blue_i8;
+      out_buffer[buffer_index + 0] = red;
+      out_buffer[buffer_index + 1] = green;
+      out_buffer[buffer_index + 2] = blue;
     }
   }
 }

@@ -26,7 +26,7 @@ class Rasterizer {
   }
 
   static int32_t DivFP(const int32_t a, const int32_t b) {
-    int32_t result = a * kFixedPoint;
+    const int32_t result = a << 8;
 
     return b != 0 ? result / b : result;
   }
@@ -41,7 +41,7 @@ class Rasterizer {
   }
 
   static int32_t RoundFPToInt(const int32_t a) {
-    return (a + kFixedPoint / 2) / kFixedPoint;
+    return (a >> 8) + ((a & 0xFF) >> 7);
   }
 
   static int32_t Gate(const int32_t a, const int32_t min, const int32_t max) {
