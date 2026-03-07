@@ -174,20 +174,37 @@ void ImuProvider::UpdateStroke(int new_samples) {
     const int32_t old_state = *stroke_state;
 
     //determine if there is a break between gestures
-    if (old_state == eWaiting || old_state == eDone) {
-      if (is_moving) {
-        stroke_length = moving_sample_count;
-        *stroke_state = eDrawing;
-      }
-    } else if (old_state == eDrawing) {
-      if (!is_moving) {
-        if (stroke_length > minimum_stroke_length) {
-          *stroke_state = eDone;
-        } else {
-          stroke_length = 0;
-          *stroke_state = eWaiting;
+    switch (old_state) {
+      case eWaiting:
+      case eDone:
+        if (is_moving) {
+          stroke_length = moving_sample_count;
+          *stroke_state = eDrawing;
         }
-      }
+        break;
+      case eDrawing:
+        if (!is_moving) {
+          if (stroke_length > minimum_stroke_length) {
+            movement_stopped = millis();
+            *stroke_state = ePausing;
+          } else {
+            stroke_length = 0;
+            *stroke_state = eWaiting;
+          }
+        }
+        break;
+      case ePausing: {
+          if (!is_moving) {
+            const long now = millis();
+            if (now - movement_stopped > 500) {
+              *stroke_state = eDone;
+            }
+          } else {
+            *stroke_state = eDrawing;
+          }
+        }
+        break;
+      default: ;
     }
 
     //if the stroke is too small we skip to the next iteration
@@ -210,7 +227,7 @@ void ImuProvider::UpdateStroke(int new_samples) {
 
     const int start_index = getStartIndex(stroke_length + current_head);
 
-    //accumulate the x, y, and z orintation data
+    //accumulate the x, y, and z orientation data
     float total[3] = { 0.0f, 0.0f, 0.0f };
 
     for (int j = 0; j < stroke_length; ++j) {

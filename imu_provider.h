@@ -19,6 +19,7 @@ constexpr int stroke_struct_byte_count = (2 * sizeof(int32_t)) + stroke_points_b
 constexpr int moving_sample_count = 50;
 constexpr int acceleration_data_length = 600 * 3;
 constexpr int gyroscope_data_length = 600 * 3;
+constexpr long max_movement_wait = 500L;
 
 enum COORDINATES {
   C_X = 0,
@@ -27,6 +28,7 @@ enum COORDINATES {
 };
 
 class ImuProvider {
+  long movement_stopped = 0L;
   bool done_just_triggered = false;
   float current_velocity[3] = {0.0f, 0.0f, 0.0f};
   float current_gravity[3] = {0.0f, 0.0f, 0.0f};
@@ -48,9 +50,10 @@ class ImuProvider {
   float gyroscope_sample_rate = 0.0f;
   
   enum GestureState {
-    eWaiting = 0,
-    eDrawing = 1,
-    eDone = 2
+    eWaiting,
+    eDrawing,
+    ePausing,
+    eDone
   };
 
   Rasterizer rasterizer;
