@@ -40,7 +40,7 @@ void Rasterizer::RasterizeStroke(
   const int32_t x_range_fp = FloatToFP(x_range);
   const int32_t y_range_fp = FloatToFP(y_range);
 
-  // stroke increment?
+  // color shift increment
   const int t_inc_fp = kFixedPoint / stroke_points_count;
 
   // 0.5 in fixed point
@@ -73,6 +73,11 @@ void Rasterizer::RasterizeStroke(
     int32_t red_i32;
     int32_t green_i32;
     int32_t blue_i32;
+
+    // what is happening here is red is fading out between 0 and halfway in,
+    // green is rising to half point and then falling again,
+    // and blue is rising from half point to end.
+    // This can be done far easier.
     if (t_fp < one_half_fp) {
       const int32_t local_t_fp = DivFP(t_fp, one_half_fp);
       const int32_t one_minus_t_fp = kFixedPoint - local_t_fp;
