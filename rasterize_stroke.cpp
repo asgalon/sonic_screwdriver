@@ -94,19 +94,19 @@ void Rasterizer::RasterizeStroke(
     if (Abs(delta_x_fp) > Abs(delta_y_fp)) {
       line_length = Abs(RoundFPToInt(delta_x_fp));
       if (delta_x_fp > 0) {
-        x_inc_fp = 1 * kFixedPoint;
+        x_inc_fp = kFixedPoint;
         y_inc_fp = DivFP(delta_y_fp, delta_x_fp);
       } else {
-        x_inc_fp = -1 * kFixedPoint;
+        x_inc_fp = -kFixedPoint;
         y_inc_fp = -DivFP(delta_y_fp, delta_x_fp);
       }
     } else {
       line_length = Abs(RoundFPToInt(delta_y_fp));
       if (delta_y_fp > 0) {
-        y_inc_fp = 1 * kFixedPoint;
+        y_inc_fp = kFixedPoint;
         x_inc_fp = DivFP(delta_x_fp, delta_y_fp);
       } else {
-        y_inc_fp = -1 * kFixedPoint;
+        y_inc_fp = -kFixedPoint;
         x_inc_fp = -DivFP(delta_x_fp, delta_y_fp);
       }
     }

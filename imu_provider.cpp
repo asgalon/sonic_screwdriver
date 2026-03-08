@@ -5,8 +5,6 @@
 #include "imu_provider.h"
 #include "util.h"
 
-#include <cmath>
-
 void ImuProvider::SetupIMU() {
 
   // Make sure we are pulling measurements into a FIFO.
@@ -30,9 +28,9 @@ void ImuProvider::ReadAccelerometerAndGyroscope(int *new_accelerometer_samples, 
   if (IMU.accelerationAvailable()) {
     ReadGyroscope(new_gyroscope_samples);
 
-    const int acceleration_index = (acceleration_data_index % acceleration_data_length);
+    const int acceleration_index = acceleration_data_index % acceleration_data_length;
     acceleration_data_index += 3;
-    float* current_acceleration_data = &acceleration_data[acceleration_index];
+    float *current_acceleration_data = &acceleration_data[acceleration_index];
     // Read each sample, removing it from the device's FIFO buffer
     if (!IMU.readAcceleration(
         current_acceleration_data[0], current_acceleration_data[1], current_acceleration_data[2])) {
@@ -116,7 +114,7 @@ void ImuProvider::EstimateGyroscopeDrift() {
   float total[3] =  { 0.0f, 0.0f, 0.0f };
 
   for (int i = 0; i < samples_to_average; ++i) {
-    const int index = ((start_index + (i * 3)) % gyroscope_data_length);
+    const int index = (start_index + i * 3) % gyroscope_data_length;
     const float* entry = &gyroscope_data[index];
 
     for (int k = C_X; k <= C_Z; k++) {
@@ -319,7 +317,7 @@ void ImuProvider::UpdateStroke(int new_samples) {
   }
 }
 
-void ImuProvider::RasterizeStroke(float x_range, float y_range, int width, int height, int8_t* out_buffer) {
+void ImuProvider::RasterizeStroke(float x_range, float y_range, int width, int height, int8_t* out_buffer) const {
   rasterizer.RasterizeStroke(stroke_points, *stroke_transmit_length, x_range, y_range, width, height, out_buffer);
 }
 
@@ -332,12 +330,9 @@ float ImuProvider::VectorMagnitude(const float* vec) {
 
 void ImuProvider::NormalizeVector(const float* in_vec, float* out_vec) {
   const float magnitude = VectorMagnitude(in_vec);
-  const float x = in_vec[0];
-  const float y = in_vec[1];
-  const float z = in_vec[2];
-  out_vec[0] = x / magnitude;
-  out_vec[1] = y / magnitude;
-  out_vec[2] = z / magnitude;
+  for (int k = 0; k < 3; k++) {
+    out_vec[k] = in_vec[k] / magnitude;
+  }
 }
 
 // returning a python tuple in C++ ?
@@ -351,7 +346,7 @@ bool ImuProvider::IsMoving(int samples_before) {
   // Note: this is different from how we calculate isMoving in EstimateGyroscopeDrift()
   constexpr float moving_threshold = 10.0f;
 
-  if ((gyroscope_data_index - samples_before) < moving_sample_count) {
+  if (gyroscope_data_index - samples_before < moving_sample_count) {
     return false;
   }
 

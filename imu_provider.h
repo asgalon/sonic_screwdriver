@@ -23,7 +23,6 @@ constexpr long max_movement_wait = 500L;
 
 class ImuProvider {
   long movement_stopped = 0L;
-  bool done_just_triggered = false;
   float current_velocity[3] = {0.0f, 0.0f, 0.0f};
   float current_gravity[3] = {0.0f, 0.0f, 0.0f};
   float current_gyroscope_drift[3] = {0.0f, 0.0f, 0.0f};
@@ -51,7 +50,7 @@ class ImuProvider {
   };
 
   Rasterizer rasterizer;
-
+  bool done_just_triggered = false;
 protected:
   friend class Rasterizer;
 
@@ -86,10 +85,10 @@ public:
     float y_range,
     int width,
     int height,
-    int8_t* out_buffer);
+    int8_t* out_buffer) const;
 protected:
-  float VectorMagnitude(const float* vec) ;
-  void NormalizeVector(const float* in_vec, float* out_vec);
+  inline float VectorMagnitude(const float* vec) ;
+  inline void NormalizeVector(const float* in_vec, float* out_vec);
 
   // returning a python tuple in C++ ?
   // static float DotProduct(const float* a, const float* b) {
@@ -99,9 +98,9 @@ protected:
   bool IsMoving(int samples_before);
 
   // Store a single capped scaled value as signed byte to target buffer position
-  static void storeCappedValue(float axis, int8_t *stroke_entry);
+  static inline void storeCappedValue(float axis, int8_t *stroke_entry);
 
-  int getStartIndex(int pos) const {
+  int getStartIndex(const int pos) const {
     return (gyroscope_data_index + (gyroscope_data_length - 3 * pos)) % gyroscope_data_length;
   }
 };
