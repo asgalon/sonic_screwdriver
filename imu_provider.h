@@ -1,5 +1,6 @@
 #ifndef SONIC_SCREWDRIVER_IMU_PROVIDER_H
 #define SONIC_SCREWDRIVER_IMU_PROVIDER_H
+#include <cstdint>
 
 #ifdef NANO33_BLE_REV2
 #include <Arduino_BMI270_BMM150.h>
@@ -9,14 +10,25 @@
 
 #include <ArduinoBLE.h>
 
-#include "rasterize_stroke.h"
 #include "util.h"
 
+/*
+ * Stroke point structure:
+ * int8_t x
+ * int8_t y
+ *
+ * Stroke buffer structure:
+ * int32_t state
+ * int32_t transmit_length (number of points)
+ * point buffer[stroke_transmit_max_length]
+ *
+ * stroke_transmit_stride means that there are two bytes in each point.
+ */
 constexpr int stroke_transmit_stride = 2;
 constexpr int stroke_transmit_max_length = 160;
 constexpr int stroke_max_length = stroke_transmit_max_length * stroke_transmit_stride;
 constexpr int stroke_points_byte_count = 2 * sizeof(int8_t) * stroke_transmit_max_length;
-constexpr int stroke_struct_byte_count = (2 * sizeof(int32_t)) + stroke_points_byte_count;
+constexpr int stroke_struct_byte_count = 2 * sizeof(int32_t) + stroke_points_byte_count;
 constexpr int moving_sample_count = 50;
 constexpr int acceleration_data_length = 600 * 3;
 constexpr int gyroscope_data_length = 600 * 3;
