@@ -15,12 +15,6 @@ limitations under the License.
 
 #include <cstdint>
 
-constexpr int kFixedPoint = 256;
-
-//
-// Rasterizer lightweight class, does not have any data members
-//
-
   /**
    * rasterize the stroke into width x height box.
    * Rasterize stroke
