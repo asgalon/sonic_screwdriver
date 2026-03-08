@@ -197,7 +197,7 @@ void loop() {
     imu_provider.UpdateOrientation(gyroscope_samples_read);
     imu_provider.UpdateStroke(gyroscope_samples_read);
     if (central && central.connected()) {
-      imu_provider.writeStroke(strokeCharacteristic);
+      strokeCharacteristic.writeValue(stroke_struct_buffer, stroke_struct_byte_count);
     }
   }
   if (accelerometer_samples_read > 0) {
@@ -208,7 +208,7 @@ void loop() {
   // Wait for a gesture to be done
   if (imu_provider.doneJustTriggered()) {
     // Rasterize the gesture
-    imu_provider.RasterizeStroke(0.6f, 0.6f, raster_width, raster_height, raster_buffer);
+    RasterizeStroke(stroke_points, *stroke_transmit_length, 0.6f, 0.6f, raster_width, raster_height, raster_buffer);
     for (int y = 0; y < raster_height; ++y) {
       char line[raster_width + 1];
       for (int x = 0; x < raster_width; ++x) {
@@ -217,7 +217,7 @@ void loop() {
         const int8_t green = pixel[1];
         const int8_t blue = pixel[2];
         char output;
-        if ((red > -128) || (green > -128) || (blue > -128)) {
+        if (red > -128 || green > -128 || blue > -128) {
           output = '#';
         } else {
           output = '.';

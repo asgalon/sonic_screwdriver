@@ -13,7 +13,47 @@ limitations under the License.
 #include "rasterize_stroke.h"
 #include "util.h"
 
-void Rasterizer::RasterizeStroke(
+static int32_t MulFP(const int32_t a, const int32_t b) {
+  return a * b / kFixedPoint;
+}
+
+static int32_t DivFP(const int32_t a, const int32_t b) {
+  const int32_t result = a << 8;
+
+  return b != 0 ? result / b : result;
+}
+
+static int32_t FloatToFP(const float a) {
+  return static_cast<int32_t>(a * kFixedPoint);
+}
+
+static int32_t NormToCoordFP(const int32_t a_fp, const int32_t range_fp, const int32_t half_size_fp) {
+  const int32_t norm_fp = DivFP(a_fp, range_fp);
+  return MulFP(norm_fp, half_size_fp) + half_size_fp;
+}
+
+static int32_t RoundFPToInt(const int32_t a) {
+  return (a >> 8) + ((a & 0xFF) >> 7);
+}
+
+static int32_t Gate(const int32_t a, const int32_t min, const int32_t max) {
+  if (a < min) {
+    return min;
+  }
+  if (a > max) {
+    return max;
+  }
+  return a;
+}
+
+static int32_t Abs(const int32_t a) {
+  if (a >= 0) {
+    return a;
+  }
+  return -a;
+}
+
+void RasterizeStroke(
   const int8_t *stroke_points,
   const int stroke_points_count,
   const float x_range,

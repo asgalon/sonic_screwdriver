@@ -20,48 +20,7 @@ constexpr int kFixedPoint = 256;
 //
 // Rasterizer lightweight class, does not have any data members
 //
-class Rasterizer {
-  static int32_t MulFP(const int32_t a, const int32_t b) {
-    return a * b / kFixedPoint;
-  }
 
-  static int32_t DivFP(const int32_t a, const int32_t b) {
-    const int32_t result = a << 8;
-
-    return b != 0 ? result / b : result;
-  }
-
-  static int32_t FloatToFP(const float a) {
-    return static_cast<int32_t>(a * kFixedPoint);
-  }
-
-  static int32_t NormToCoordFP(const int32_t a_fp, const int32_t range_fp, const int32_t half_size_fp) {
-    const int32_t norm_fp = DivFP(a_fp, range_fp);
-    return MulFP(norm_fp, half_size_fp) + half_size_fp;
-  }
-
-  static int32_t RoundFPToInt(const int32_t a) {
-    return (a >> 8) + ((a & 0xFF) >> 7);
-  }
-
-  static int32_t Gate(const int32_t a, const int32_t min, const int32_t max) {
-    if (a < min) {
-      return min;
-    }
-    if (a > max) {
-      return max;
-    }
-    return a;
-  }
-
-  static int32_t Abs(const int32_t a) {
-    if (a >= 0) {
-      return a;
-    }
-    return -a;
-  }
-
-public:
   /**
    * rasterize the stroke into width x height box.
    * Rasterize stroke
@@ -73,7 +32,7 @@ public:
    * @param height height of the raster image
    * @param out_buffer raster image output buffer
    */
-  static void RasterizeStroke(
+  void RasterizeStroke(
       const int8_t* stroke_points,
       int stroke_points_count,
       float x_range,
@@ -81,6 +40,5 @@ public:
       int width,
       int height,
       int8_t* out_buffer);
-};
 
 #endif   // TENSORFLOW_LITE_MICRO_EXAMPLES_SONIC_SCREWDRIVER_RASTERIZE_STROKE_H
